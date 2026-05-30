@@ -56,7 +56,7 @@ class ParentNode(HTMLNode):
             raise ValueError("invalid HTML: no children for parent node")
         html_children = ""
         for child in self.children:
-            html_string_mid += child.to_html()
+            html_children += child.to_html()
         return f"<{self.tag}>{html_children}</{self.tag}>"
 
     def __repr__(self) -> str:
