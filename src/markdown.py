@@ -1,8 +1,10 @@
 import re
 from enum import Enum
-from textnode import TextNode, TextType
+from textnode import TextNode, TextType, text_node_to_html_node
+from htmlnode import HTMLNode, ParentNode
 
 
+# TEXT FORMATTING PROCESSING
 def text_to_textnodes(text:str) -> list[TextNode]:
     textnodes = [TextNode(text, TextType.TEXT),]
     textnodes = split_nodes_delimiter(textnodes, "**", TextType.BOLD)
@@ -93,6 +95,8 @@ def extract_markdown_links(text:str) -> list[tuple[str,str]]:
     # rest same as above
     return re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
 
+
+# BLOCKS PROCESSING
 def markdown_to_blocks(markdown: str) -> list[str]:
     blocks = markdown.split("\n\n")
     clean_blocks = []
@@ -137,3 +141,60 @@ def block_to_blocktype(md_block: str) -> "BlockType":
             return BlockType.ORDERED_LIST
         else:
             return BlockType.PARAGRAPH
+        
+
+# MARKDOWN TO HTML
+def markdown_to_html_node(markdown: str) -> HTMLNode:
+    blocks = markdown_to_blocks(markdown)
+    children = []
+    for block in blocks:
+        block_type = block_to_blocktype(block)
+        if block_type is BlockType.QUOTE:
+            lines = block.split("\n")
+            stripped_lines = []
+            for line in lines:
+                stripped_lines.append(line.lstrip(">").strip())
+            text = " ".join(stripped_lines)
+            para_children = text_to_children(text)
+            children.append(ParentNode("blockquote", para_children))
+        elif block_type is BlockType.UNORDERED_LIST:
+            list_items = block.split("\n")
+            unordered_children = []
+            for item in list_items:
+                text = item.strip("- ")
+                para_children = text_to_children(text)
+                unordered_children.append(ParentNode("li", para_children))
+            children.append(ParentNode("ul", unordered_children))
+        elif block_type is BlockType.ORDERED_LIST:
+            list_items = block.split("\n")
+            ordered_children = []
+            for item in list_items:
+                text = item[3:]
+                para_children = text_to_children(text)
+                ordered_children.append(ParentNode("li", para_children))
+            children.append(ParentNode("ol", ordered_children))
+        elif block_type is BlockType.CODE:
+            text = block[3:-3].removeprefix("\n")
+            text_node = TextNode(text, TextType.TEXT)
+            html_node = text_node_to_html_node(text_node)
+            para_children = ParentNode("code", [html_node])
+            children.append(ParentNode("pre", [para_children]))
+        elif block_type is BlockType.HEADING:
+            header_number = block[:6].count("#")
+            text = block.strip("# ")
+            para_children = text_to_children(text)
+            children.append(ParentNode(f"h{header_number}", para_children))
+        elif block_type is BlockType.PARAGRAPH:
+            text = block.replace("\n", " ")
+            para_children = text_to_children(text)  # returns a list of inline HTMLNodes
+            children.append(ParentNode("p", para_children))
+        else:
+            raise Exception("invalid block type")
+    return ParentNode("div", children)
+
+def text_to_children(text: str) -> list:
+    text_nodes = text_to_textnodes(text)
+    html_nodes = []
+    for node in text_nodes:
+        html_nodes.append(text_node_to_html_node(node))
+    return html_nodes
