@@ -1,6 +1,16 @@
 import re
+from enum import Enum
 from textnode import TextNode, TextType
 
+
+def text_to_textnodes(text:str) -> list[TextNode]:
+    textnodes = [TextNode(text, TextType.TEXT),]
+    textnodes = split_nodes_delimiter(textnodes, "**", TextType.BOLD)
+    textnodes = split_nodes_delimiter(textnodes, "_", TextType.ITALIC)
+    textnodes = split_nodes_delimiter(textnodes, "`", TextType.CODE)
+    textnodes = split_nodes_image(textnodes)
+    textnodes = split_nodes_link(textnodes)
+    return textnodes
 
 def split_nodes_delimiter(
     old_nodes: list[TextNode], delimiter: str, text_type: TextType
@@ -82,3 +92,48 @@ def extract_markdown_links(text:str) -> list[tuple[str,str]]:
     # then [( thing in [], thing in () ), ...]
     # rest same as above
     return re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+
+def markdown_to_blocks(markdown: str) -> list[str]:
+    blocks = markdown.split("\n\n")
+    clean_blocks = []
+    for block in blocks:
+        clean_block = block.strip()
+        if clean_block != "":
+            clean_blocks.append(clean_block)
+    return clean_blocks
+
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    UNORDERED_LIST = "unordered list"
+    ORDERED_LIST = "ordered list"
+
+def block_to_blocktype(md_block: str) -> "BlockType":
+    if md_block.startswith("# ") or md_block.startswith("## ") or md_block.startswith("### ") or md_block.startswith("#### ") or md_block.startswith("##### ") or md_block.startswith("###### "):
+        return BlockType.HEADING
+    elif md_block.startswith("```\n") and md_block.endswith("```"):
+        return BlockType.CODE
+    else:
+        lines = md_block.split("\n")
+        quote = True
+        unordered = True
+        ordered = True
+        count = 1
+        for line in lines:
+            if not line.startswith(">"):
+                quote = False
+            if not line.startswith("- "):
+                unordered = False
+            if not line.startswith(f"{count}. "):
+                ordered = False
+            count += 1
+        if quote:
+            return BlockType.QUOTE
+        elif unordered:
+            return BlockType.UNORDERED_LIST
+        elif ordered:
+            return BlockType.ORDERED_LIST
+        else:
+            return BlockType.PARAGRAPH
