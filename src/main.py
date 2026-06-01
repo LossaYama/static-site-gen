@@ -5,7 +5,7 @@ from markdown import markdown_to_html_node, extract_title
 from htmlnode import HTMLNode
 
 def main():
-    basepath = sys.argv[0]
+    basepath = sys.argv[1]
     if basepath == "":
         basepath = "/"
     target_dir = "docs"
@@ -56,7 +56,7 @@ def generate_page(from_path: str, template_path: str, dest_path: str, basepath: 
     title = extract_title(content)
     para_page1 = template.replace("{{ Title }}", title)
     para_page2 = para_page1.replace("{{ Content }}", content_html)
-    para_page3 = para_page2.replace('href="/', f'href={basepath}')
+    para_page3 = para_page2.replace('href="/', f'href="{basepath}')
     page = para_page3.replace('src="/', f'src="{basepath}')
     dest_dir = os.path.dirname(dest_path)
     if not os.path.exists(dest_dir):
