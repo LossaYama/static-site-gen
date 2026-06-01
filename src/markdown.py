@@ -58,7 +58,6 @@ def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
             new_nodes.append(TextNode(original_text, TextType.TEXT))
     return new_nodes
 
-
 def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
     new_nodes = []
     for old_node in old_nodes:
@@ -82,12 +81,19 @@ def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
             new_nodes.append(TextNode(original_text, TextType.TEXT))
     return new_nodes
 
+def extract_title(markdown: str) -> str:
+    lines = markdown.split("\n")
+    for line in lines:
+        if line.startswith("#"):
+            if not line.startswith("##"):
+                return line.lstrip("#").strip()
+    raise Exception("no header found")
+
 def extract_markdown_images(text:str) -> list[tuple[str,str]]:
     # [( thing after ! and in [], thing in () ), ...]
     # * lets it select 0 or more
     # [^...] makes it drop the brackets when records the string
     return re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
-
 
 def extract_markdown_links(text:str) -> list[tuple[str,str]]:
     # first section makes sure it doesn't pick up images

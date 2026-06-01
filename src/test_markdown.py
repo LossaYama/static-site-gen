@@ -9,7 +9,8 @@ from markdown import (
     markdown_to_blocks,
     block_to_blocktype,
     BlockType,
-    markdown_to_html_node
+    markdown_to_html_node,
+    extract_title
 )
 from textnode import TextNode, TextType
 
@@ -311,6 +312,13 @@ the **same** even with inline stuff
             html,
             "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff\n</code></pre></div>",
         )
+
+    def test_header_extraction(self):
+        md = """# Title
+
+Normal text."""
+        title = extract_title(md)
+        self.assertEqual(title, "Title")
 
 
 if __name__ == "__main__":
